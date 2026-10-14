@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Venues - Bristol Community Events</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+<div class="container">
+    {% include "_shared_header.html" %}
+
+    <a href="{{ url_for('admin_dashboard') }}" class="back-link">← Back to Dashboard</a>
+
+    {% if message %}
+        <div class="detail-message">{{ message }}</div>
+    {% endif %}
+
+    <!-- Add Venue -->
+    <section class="detail-info-card">
+        <h2 class="booking-title">Add New Venue</h2>
+        <p class="booking-subtitle">Venues added here appear on the home page and in the event creation form for all users.</p>
+        <form method="POST" enctype="multipart/form-data" class="admin-form-grid">
+            <div>
+                <label class="form-label">Venue Name</label>
+                <input type="text" name="venue_name" placeholder="e.g. Bristol Hippodrome" class="form-input" required>
+            </div>
+            <div>
+                <label class="form-label">Address</label>
+                <input type="text" name="address" placeholder="e.g. St Augustine's Parade" class="form-input" required>
+            </div>
+            <div>
+                <label class="form-label">Capacity</label>
+                <input type="number" name="capacity" placeholder="e.g. 500" class="form-input" required>
+            </div>
+            <div>
+                <label class="form-label">Suitable For</label>
+                <input type="text" name="suitability" placeholder="e.g. Musical, Sports, Exhibitions" class="form-input" required>
+            </div>
+            <div>
+                <label class="form-label">Venue Image <span style="font-weight:400;color:#7f8c8d;">(optional)</span></label>
+                <input type="file" name="venue_image_file" accept="image/*" class="form-input">
+                <p style="margin-top:6px;font-size:13px;color:#7f8c8d;">Shown on the home page venues section.</p>
+            </div>
+            <div style="grid-column:1/-1;">
+                <button type="submit" class="login-btn" style="padding:13px 36px;font-size:15px;">Add Venue</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- All Venues -->
+    <section class="detail-booking-card">
+        <h2 class="booking-title">Current Venues</h2>
+        <p class="booking-subtitle">
+            {{ venues|length }} venue(s). Changes here are reflected instantly for all users.
+            Deleting a venue will unassign it from any existing events.
+        </p>
+
+        {% if venues %}
+            <div class="admin-cards-grid">
+                {% for venue in venues %}
+                    <div class="admin-item-card admin-item-card--venue">
+                        {% if venue.venue_image %}
+                            <img src="{{ url_for('static', filename='img/' ~ venue.venue_image) }}"
+                                 alt="{{ venue.venue_name }}" class="admin-venue-thumb">
+                        {% else %}
+                            <div class="admin-venue-icon">🏛</div>
+                        {% endif %}
+
+                        <div class="admin-item-body">
+                            <h3 class="admin-item-title">{{ venue.venue_name }}</h3>
+                            <div class="admin-item-meta">
+                                <span class="admin-meta-pill">Cap: {{ venue.capacity }}</span>
+                            </div>
+                            {% if venue.address %}
+                                <p class="admin-item-detail">📍 {{ venue.address }}</p>
+                            {% endif %}
+                            {% if venue.suitability %}
+                                <p class="admin-item-detail">🎯 Suitable for: {{ venue.suitability }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;align-self:center;">
+                            <a href="{{ url_for('admin_edit_venue', venue_id=venue.venue_id) }}"
+                               class="account-btn" style="font-size:13px;padding:8px 16px;text-align:center;">Edit</a>
+                            <form method="POST"
+                                  action="{{ url_for('admin_delete_venue_route', venue_id=venue.venue_id) }}"
+                                  style="margin:0;">
+                                <button type="submit"
+                                        class="cancel-btn"
+                                        style="width:auto;padding:8px 16px;font-size:13px;"
+                                        onclick="return confirm('Delete {{ venue.venue_name }}? Events using it will have no venue assigned.')">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-text">No venues yet. Add one above!</p>
+        {% endif %}
+    </section>
+
+</div>
+</body>
+</html>

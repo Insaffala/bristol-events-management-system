@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+<div class="container">
+    {% include "_shared_header.html" %}
+    <a href="{{ url_for('admin_dashboard') }}" class="back-link">← Back</a>
+
+    {% if message %}
+        <div class="detail-message">{{ message }}</div>
+    {% endif %}
+
+    <section class="detail-booking-card admin-users-section">
+        <div class="admin-users-heading">
+            <div>
+                <p class="eyebrow">Admin panel</p>
+                <h2 class="booking-title">Manage Users</h2>
+                <p class="admin-users-subtitle">Update user roles, reset passwords, or delete user accounts.</p>
+            </div>
+        </div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-users-table">
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Username</th>
+                        <th>Current Role</th>
+                        <th>Change Role</th>
+                        <th>Reset Password</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td data-label="User ID">#{{ user.user_id }}</td>
+                        <td data-label="Username"><strong>{{ user.username }}</strong></td>
+                        <td data-label="Current Role">
+                            <span class="role-pill role-{{ user.role }}">{{ user.role }}</span>
+                        </td>
+                        <td data-label="Change Role">
+                            <form method="POST" class="table-action-form">
+                                <input type="hidden" name="action" value="role">
+                                <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                                <select name="role" class="table-input" aria-label="Role for {{ user.username }}">
+                                    <option value="standard" {% if user.role == 'standard' %}selected{% endif %}>standard</option>
+                                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
+                                </select>
+                                <button type="submit" class="small-action-btn">Save</button>
+                            </form>
+                        </td>
+                        <td data-label="Reset Password">
+                            <form method="POST" class="table-action-form">
+                                <input type="hidden" name="action" value="password">
+                                <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                                <input type="password" name="new_password" placeholder="New password" class="table-input" minlength="6" required aria-label="New password for {{ user.username }}">
+                                <button type="submit" class="small-action-btn">Reset</button>
+                            </form>
+                        </td>
+                        <td data-label="Delete">
+                            <form method="POST" onsubmit="return confirm('Delete {{ user.username }} and all their bookings/waiting-list records?');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                                <button type="submit" class="small-delete-btn" {% if user.user_id == session.get('user_id') %}disabled title="You cannot delete your own account"{% endif %}>Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-table-message">No users found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+</body>
+</html>

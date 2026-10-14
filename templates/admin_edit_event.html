@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Event - Bristol Community Events</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+
+    <div class="container">
+        {% include "_shared_header.html" %}
+
+        <a href="{{ url_for('admin_dashboard') }}" class="back-link">← Back</a>
+
+        <section class="detail-info-card">
+            <h2 class="booking-title">Update Event</h2>
+            <p class="booking-subtitle">Edit this event and optionally replace its image.</p>
+
+            <form method="POST" action="{{ url_for('admin_update_event_route', event_id=event.event_id) }}" enctype="multipart/form-data" class="admin-form-grid">
+                <input type="text" name="event_name" value="{{ event.event_name }}" required class="form-input">
+                <input type="date" name="event_starting_date" value="{{ event.event_starting_date }}" required class="form-input">
+                <input type="date" name="event_ending_date" value="{{ event.event_ending_date }}" required class="form-input">
+                <input type="number" step="0.01" name="event_total_price" value="{{ event.event_total_price }}" required class="form-input">
+                <input type="date" name="booking_deadline" value="{{ event.booking_deadline }}" required class="form-input">
+
+                <textarea name="event_description" required class="form-input">{{ event.event_description or '' }}</textarea>
+
+                <select name="venue_id" required class="form-input">
+                    {% for venue in venues %}
+                        <option value="{{ venue.venue_id }}" {% if venue.venue_id == event.venue_id %}selected{% endif %}>
+                            {{ venue.venue_name }} (Capacity: {{ venue.capacity }})
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <select name="category_id" required class="form-input">
+                    {% for cat in categories %}
+                        <option value="{{ cat.category_id }}" {% if cat.category_id == event.category_id %}selected{% endif %}>
+                            {{ cat.category_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <div class="form-input" style="display:flex; flex-direction:column; gap:10px;">
+                    {% if event.event_image %}
+                        <div>
+                            <strong>Current image:</strong><br>
+                            <img src="{{ url_for('static', filename='img/' ~ event.event_image) }}" alt="{{ event.event_name }}" class="admin-edit-preview">
+                        </div>
+                    {% endif %}
+                    <input type="file" name="event_image_file" accept="image/*">
+                    <small>Leave empty to keep current image.</small>
+                </div>
+
+                <div style="grid-column:1/-1;">
+                    <label class="form-label">Conditions <span style="font-weight:400;color:#7f8c8d;">(one per line)</span></label>
+                    <textarea name="event_conditions_text" class="form-input" placeholder="e.g. No refunds after booking" style="min-height:76px;">{{ event_conditions_text }}</textarea>
+                </div>
+
+                <div style="grid-column:1/-1;">
+                    <button type="submit" class="login-btn" style="padding:13px 36px;font-size:15px;">Save Changes</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+</body>
+</html>

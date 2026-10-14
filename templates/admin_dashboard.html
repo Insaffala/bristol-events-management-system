@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Bristol Community Events</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+<div class="container">
+    {% include "_shared_header.html" %}
+
+    {% if message %}
+        <div class="detail-message">{{ message }}</div>
+    {% endif %}
+
+
+        <section class="detail-info-card">
+            <h2 class="booking-title">Add New Event</h2>
+            <p class="booking-subtitle">Fill in the details below to publish a new event.</p>
+            <form method="POST" action="{{ url_for('admin_add_event_route') }}"
+                  enctype="multipart/form-data" class="admin-form-grid">
+                <div>
+                    <label class="form-label">Event Name</label>
+                    <input type="text" name="event_name" placeholder="e.g. Bristol Jazz Night" required class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="event_starting_date" required class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="event_ending_date" required class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Price (£)</label>
+                    <input type="number" step="0.01" name="event_total_price" placeholder="0.00" required class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Booking Deadline</label>
+                    <input type="date" name="booking_deadline" required class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Venue</label>
+                    <select name="venue_id" required class="form-input">
+                        <option value="">Select a venue…</option>
+                        {% for venue in venues %}
+                            <option value="{{ venue.venue_id }}">{{ venue.venue_name }} (Cap: {{ venue.capacity }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Category</label>
+                    <select name="category_id" required class="form-input">
+                        <option value="">Select a category…</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.category_id }}">{{ cat.category_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Event Image</label>
+                    <input type="file" name="event_image_file" accept="image/*" required class="form-input">
+                </div>
+                <div style="grid-column:1/-1;">
+                    <label class="form-label">Description</label>
+                    <textarea name="event_description" placeholder="Describe the event…" required class="form-input" style="min-height:80px;"></textarea>
+                </div>
+
+                <div style="grid-column:1/-1;">
+                    <label class="form-label">Conditions <span style="font-weight:400;color:#7f8c8d;">(one per line, optional)</span></label>
+                    <textarea name="event_conditions_text"
+                              placeholder="e.g. No refunds after booking&#10;Must bring valid ID"
+                              class="form-input" style="min-height:72px;"></textarea>
+                </div>
+                <div style="grid-column:1/-1;">
+                    <button type="submit" class="login-btn" style="padding:13px 36px;font-size:15px;">Add Event</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="detail-booking-card">
+            <h2 class="booking-title">All Events</h2>
+            <p class="booking-subtitle">{{ events|length }} event(s) in the system.</p>
+            {% if events %}
+                <div class="admin-cards-grid">
+                    {% for event in events %}
+                        <div class="admin-item-card">
+                            <img src="{{ url_for('static', filename='img/' ~ (event.event_image if event.event_image else fallback_event_image(event))) }}"
+                                 alt="{{ event.event_name }}" class="admin-item-img">
+                            <div class="admin-item-body">
+                                <h3 class="admin-item-title">{{ event.event_name }}</h3>
+                                <div class="admin-item-meta">
+                                    {% if event.category_name %}<span class="admin-meta-pill">{{ event.category_name }}</span>{% endif %}
+                                    <span class="admin-meta-pill">{{ event.venue_name }}</span>
+                                    <span class="admin-meta-pill">£{{ event.event_total_price }}</span>
+                                </div>
+                                <p class="admin-item-detail">📅 {{ event.event_starting_date }} → {{ event.event_ending_date }}</p>
+                                <p class="admin-item-detail">⏳ Deadline: {{ event.booking_deadline }}</p>
+                                {% set price_status = reduction_status.get(event.event_id) %}
+                                {% if price_status %}
+                                    <p class="admin-item-detail">
+                                        💸 Price rule: {{ price_status.reason }}
+                                    </p>
+                                {% endif %}
+                                {% if event.event_description %}
+                                    <p class="admin-item-desc">{{ event.event_description[:90] }}{% if event.event_description|length > 90 %}…{% endif %}</p>
+                                {% endif %}
+                            </div>
+                            <div class="admin-item-actions">
+                                {% set price_status = reduction_status.get(event.event_id) %}
+                                {% if price_status and price_status.allowed %}
+                                    <form method="POST" action="{{ url_for('admin_reduce_price_route', event_id=event.event_id) }}" style="flex:1;margin:0;">
+                                        <button type="submit" class="account-btn" style="width:100%;text-align:center;"
+                                                onclick="return confirm('This event is less than 50% booked within 10 days. Reduce ticket price by 25%?')">
+                                            Reduce Price 25%
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <a href="{{ url_for('admin_edit_event_page', event_id=event.event_id) }}"
+                                   class="account-btn" style="flex:1;text-align:center;">Edit</a>
+                                <form method="POST" action="{{ url_for('admin_delete_event_route', event_id=event.event_id) }}"
+                                      style="flex:1;margin:0;">
+                                    <button type="submit" class="cancel-btn"
+                                            onclick="return confirm('Delete {{ event.event_name }}?')">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">No events yet. Add one above!</p>
+            {% endif %}
+        </section>
+
+
+</div>
+</body>
+</html>

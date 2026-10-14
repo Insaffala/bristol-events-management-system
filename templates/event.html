@@ -1,0 +1,348 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bristol Events Management System</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/bce-icon.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+  </head>
+ {% if not request.cookies.get('cookie_consent') %}
+<div class="cookie-consent">
+    <div class="cookie-consent-content">
+        <div class="cookie-icon">🍪</div>
+
+        <div class="cookie-text">
+            <h3>Cookie preferences</h3>
+            <p>
+                We use essential cookies to keep login and bookings working.
+                With your permission, we also use one optional cookie to remember your selected event category.
+            </p>
+        </div>
+
+        <div class="cookie-buttons">
+            <form method="POST" action="{{ url_for('reject_cookies') }}">
+                <button type="submit" class="cookie-btn cookie-btn-secondary">
+                    Only essential
+                </button>
+            </form>
+
+            <form method="POST" action="{{ url_for('accept_cookies') }}">
+                <button type="submit" class="cookie-btn cookie-btn-primary">
+                    Accept all
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+  <body>
+    
+    <div class="container">
+      {% include "_shared_header.html" %}
+
+       
+
+      <div class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          {% if session.get('username') %}
+          <div class="hero-badge" style="font-size: 20px; padding: 12px 30px;">
+            Welcome, {{ session['username'] }} !
+          </div>
+          {% else %}
+          <div class="hero-badge">
+           Welcome to Bristol
+          </div>
+          {% endif %}
+          <h1 class="hero-title">Discover Amazing Events in Your City</h1>
+          <p class="hero-text">
+            From vibrant festivals to intimate workshops, experience the best of Bristol s culture and community. Your next adventure starts here!
+          </p>
+           <form method="GET" action="{{ url_for('home') }}#event1" class="hero-filter-bar">
+             <!-- Search bar with button INSIDE -->
+             <div class="hfb-search-row">
+               <div class="hfb-field hfb-field--wide">
+                 <span class="hfb-icon">🔍</span>
+                 <input type="search" class="hfb-input" name="q" value="{{ search_term }}" placeholder="Search events, venues, categories…">
+                 <button type="submit" class="hfb-inline-btn">Search</button>
+               </div>
+             </div>
+             <!-- Compact filters row -->
+             <div class="hfb-filters-row">
+               <div class="hfb-field hfb-field--sm">
+                 <span class="hfb-icon">🎭</span>
+                 <select class="hfb-select" name="category_id">
+                   <option value="">All Categories</option>
+                   {% for category in categories %}
+                     <option value="{{ category.category_id }}"
+                       {% if selected_category|string == category.category_id|string %}selected{% endif %}>
+                       {{ category.category_name }}
+                     </option>
+                   {% endfor %}
+                 </select>
+               </div>
+               <div class="hfb-field hfb-field--sm hfb-date-field">
+                 <span class="hfb-icon">📅</span>
+                 <input type="text" class="hfb-input hfb-date-input" name="month"
+                        value="{{ selected_month }}" placeholder="Pick a month…"
+                        id="monthPicker" autocomplete="off" readonly>
+               </div>
+               <label class="hfb-toggle">
+                 <input type="checkbox" name="free_only" value="1" {% if free_only %}checked{% endif %}>
+                 <span class="hfb-toggle-track"><span class="hfb-toggle-thumb"></span></span>
+                 <span class="hfb-toggle-label">Free </span>
+               </label>
+             </div>
+           </form>
+           <!-- Calendar popup -->
+           <div class="month-picker-popup" id="monthPickerPopup">
+             <div class="mpp-header">
+               <button type="button" class="mpp-nav" id="mppPrev">&#8249;</button>
+               <span class="mpp-year" id="mppYear">2025</span>
+               <button type="button" class="mpp-nav" id="mppNext">&#8250;</button>
+             </div>
+             <div class="mpp-grid" id="mppGrid"></div>
+             <button type="button" class="mpp-clear" id="mppClear">Clear</button>
+           </div>
+           <script>
+           (function(){
+             var input=document.getElementById('monthPicker'),popup=document.getElementById('monthPickerPopup');
+             var yearEl=document.getElementById('mppYear'),grid=document.getElementById('mppGrid');
+             var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+             var year=new Date().getFullYear(),selected=input.value||'';
+             function render(){
+               yearEl.textContent=year; grid.innerHTML='';
+               months.forEach(function(m,i){
+                 var val=year+'-'+String(i+1).padStart(2,'0');
+                 var btn=document.createElement('button'); btn.type='button'; btn.textContent=m;
+                 btn.className='mpp-month'+(val===selected?' mpp-selected':'');
+                 btn.addEventListener('click',function(){ selected=val; input.value=val; popup.style.display='none'; render(); });
+                 grid.appendChild(btn);
+               });
+             }
+             input.addEventListener('click',function(e){ e.stopPropagation(); popup.style.display=popup.style.display==='block'?'none':'block'; render(); });
+             document.getElementById('mppPrev').addEventListener('click',function(){ year--; render(); });
+             document.getElementById('mppNext').addEventListener('click',function(){ year++; render(); });
+             document.getElementById('mppClear').addEventListener('click',function(){ selected=''; input.value=''; render(); });
+             document.addEventListener('click',function(e){ if(!popup.contains(e.target)&&e.target!==input) popup.style.display='none'; });
+             if(selected) render();
+           })();
+           </script>
+        </div>
+      </div>
+
+      <!-- Events Section -->
+      <section class="events-section" id="event1">
+        <div class="section-header">
+          <h2 class="section-title">Upcoming Events</h2>
+          <p class="section-subtitle">Don't miss out on these amazing experiences</p>
+        </div>
+        
+        <div class="events-grid">
+          {% if events %}
+            {% for event in events %}
+              {% set img = event.event_image if event.event_image else fallback_event_image(event) %}
+              <div class="event-card">
+                <div class="event-image-container">
+                  <img src="{{ url_for('static', filename='img/' ~ img) }}" alt="{{ event.event_name }}" class="event-image">
+                  <div class="event-overlay">
+                    <span class="event-badge premium">{{ event.category_name or 'Event' }}</span>
+                  </div>
+                </div>
+                <div class="event-content">
+                  <h3 class="event-title">{{ event.event_name }}</h3>
+                  <div class="event-date">📅 {{ event.event_starting_date }}</div>
+                  <p class="event-description">{{ event.event_description or 'Explore one of Bristol s exciting events.' }}</p>
+                  <div class="event-footer">
+                    {% if event.event_total_price == 0 %}
+                      <div class="event-price free">Free Entry</div>
+                    {% else %}
+                      <div class="event-price">from £{{ event.event_total_price }}</div>
+                    {% endif %}
+                    <a href="{{ url_for('event_detail', event_id=event.event_id) }}" class="event-btn">View Event →</a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p style="font-weight:700; color:#7f8c8d;">No events matched your filters.</p>
+          {% endif %}
+        </div>
+
+      <!-- Venues Section -->
+      <section class="venues-section" id="venue1">
+        <div class="section-header">
+          <h2 class="section-title">Our Amazing Venues</h2>
+          <p class="section-subtitle">Explore the beautiful spaces hosting Bristol s best events</p>
+        </div>
+        
+        <div class="venues-grid">
+          {% if venues %}
+            {% for venue in venues %}
+              <div class="venue-card">
+                {% if venue.venue_image %}
+                  <img src="{{ url_for('static', filename='img/' ~ venue.venue_image) }}" alt="{{ venue.venue_name }}">
+                {% else %}
+                  <div class="venue-placeholder">🏛</div>
+                {% endif %}
+                <div class="venue-name">{{ venue.venue_name }}</div>
+                {% if venue.suitability %}
+                  <p class="venue-suitability">Suitable for: {{ venue.suitability }}</p>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% else %}
+            <p style="color:#7f8c8d;font-weight:600;grid-column:1/-1;text-align:center;padding:40px 0;">No venues added yet.</p>
+          {% endif %}
+        </div>
+      </section>
+      
+      <!-- About Section -->
+      <section class="about-section" id="more-about-us">
+        <div class="section-header">
+          <h2 class="section-title">More About Us</h2>
+          <p class="section-subtitle">Bringing Bristol s community together, one event at a time</p>
+        </div>
+        
+        <div class="row align-items-center mb-5">
+            <div class="col-md-6">
+                <img src="{{ url_for('static', filename='img/more.jpg') }}" alt="About Bristol Events" class="about-image">
+            </div>
+            <div class="col-md-6">
+                <div class="about-content">
+                    <h3 class="about-heading">Who We Are</h3>
+                    <p class="about-text">Our passionate team brings Bristol s vibrant culture straight to you, connecting people, places, and experiences that make this city special. Whether you're new or a longtime resident, we help you discover the best Bristol has to offer!</p>
+                    
+                    <h3 class="about-heading">Our Mission</h3>
+                    <p class="about-text">Making Bristol s cultural scene accessible to everyone through a centralized platform where you can discover, explore, and book amazing events across the city.</p>
+                    
+                    <h3 class="about-heading">What We Offer</h3>
+                    <div class="features-list">
+                        <div class="feature-item">📍 All events across major Bristol venues</div>
+                        <div class="feature-item">🎫 Easy booking system</div>
+                        <div class="feature-item">📱 Up-to-date information</div>
+                        <div class="feature-item">⭐ Exclusive member events</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🎉</div>
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Events Monthly</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🏛️</div>
+                <div class="stat-number">10+</div>
+                <div class="stat-label">Partner Venues</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">❤️</div>
+                <div class="stat-number">1k+</div>
+                <div class="stat-label">Happy Members</div>
+            </div>
+        </div>
+      </section>
+
+      <!-- Contact Section -->
+      <section class="contact-section" id="contact">
+        <div class="section-header">
+          <h2 class="section-title">Get In Touch</h2>
+          <p class="section-subtitle">We'd love to hear from you!</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="contact-info-card">
+                    <h3 class="contact-heading">Let s Connect!</h3>
+                    <p class="contact-intro">Have questions, suggestions, or feedback? Drop us a message and we'll get back to you as soon as possible!</p>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">📍</div>
+                        <div>
+                            <strong>Address</strong>
+                            <p>Bristol, BS1<br>United Kingdom</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">📧</div>
+                        <div>
+                            <strong>Email</strong>
+                            <p><a href="mailto:contact@bce.co.uk">contact@bce.co.uk</a></p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">📞</div>
+                        <div>
+                            <strong>Phone</strong>
+                            <p><a href="tel:+447491087244">+44 7491 087244</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="contact-form-card">
+                    <h3 class="form-heading">Send Us a Message</h3>
+                    <div class="mb-3">
+                        <label class="form-label">Your Name</label>
+                        <input type="text" class="form-input" placeholder="John Doe">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Your Email</label>
+                        <input type="email" class="form-input" placeholder="john@example.com">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Subject</label>
+                        <input type="text" class="form-input" placeholder="Event inquiry">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-textarea" rows="5" placeholder="Tell us what s on your mind..."></textarea>
+                    </div>
+                    
+                    <button type="button" class="submit-btn">Send Message</button>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4 class="footer-title">Bristol Community Events</h4>
+                <p class="footer-text">Let the adventure begin!</p>
+            </div>
+            <div class="footer-section">
+                <h4 class="footer-title">Quick Links</h4>
+                <div class="footer-links">
+                    <a href="#event1">The Events</a>
+                    <a href="#venue1">Our Venues</a>
+                    <a href="#more-about-us">About Us</a>
+                    <a href="#contact">Contact</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p><a href="{{ url_for('privacy') }}">Privacy Policy</a> | © 2024 Bristol Community Events</p>
+        </div>
+      </footer>
+    </div>
+    <script>
+     function showLoginAlert() {
+    alert("You must log in to access your wallet.");
+}
+    </script>
+  </body>
+</html>

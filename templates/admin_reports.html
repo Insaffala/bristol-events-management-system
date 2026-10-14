@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Reports - Bristol Community Events</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        .report-wrap { max-width: 1200px; margin: 0 auto; }
+        .report-topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:12px; }
+        .report-title  { font-size:2rem; font-weight:900; color:#2c3e50; margin:0; }
+        .report-subtitle { font-size:15px; color:#7f8c8d; margin-top:4px; }
+        .pdf-btn { background:linear-gradient(135deg,#f4a261,#e76f51); color:white; border:none; padding:12px 28px; border-radius:14px; font-family:'Outfit',sans-serif; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 4px 14px rgba(244,162,97,0.35); transition:all 0.2s ease; }
+        .pdf-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(244,162,97,0.5); }
+
+        /* KPI cards */
+        .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:36px; }
+        .kpi-card { background:white; border-radius:20px; padding:22px 20px; border:1px solid rgba(244,162,97,0.15); box-shadow:0 4px 16px rgba(0,0,0,0.05); text-align:center; transition:all 0.3s ease; }
+        .kpi-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(244,162,97,0.15); }
+        .kpi-icon  { font-size:2rem; margin-bottom:8px; }
+        .kpi-value { font-size:2rem; font-weight:900; color:#e76f51; line-height:1; margin-bottom:6px; }
+        .kpi-label { font-size:13px; color:#7f8c8d; font-weight:600; }
+        .kpi-card--green .kpi-value { color:#15803d; }
+        .kpi-card--blue  .kpi-value { color:#1d4ed8; }
+        .kpi-card--amber .kpi-value { color:#b45309; }
+
+        /* Chart sections */
+        .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
+        .chart-card { background:white; border-radius:22px; padding:28px; border:1px solid rgba(244,162,97,0.12); box-shadow:0 4px 16px rgba(0,0,0,0.05); }
+        .chart-card--wide { grid-column:1/-1; }
+        .chart-title { font-size:1.1rem; font-weight:800; color:#2c3e50; margin-bottom:4px; }
+        .chart-desc  { font-size:13px; color:#7f8c8d; margin-bottom:20px; }
+        .chart-wrap  { position:relative; }
+
+        /* Table */
+        .report-table-wrap { overflow-x:auto; }
+        .report-table { width:100%; border-collapse:collapse; font-size:14px; }
+        .report-table th { background:linear-gradient(135deg,#fff5eb,#ffe5d0); color:#d97642; font-weight:800; padding:12px 16px; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; }
+        .report-table td { padding:12px 16px; border-bottom:1px solid rgba(244,162,97,0.1); color:#2c3e50; vertical-align:middle; }
+        .report-table tr:last-child td { border-bottom:none; }
+        .report-table tr:hover td { background:rgba(244,162,97,0.04); }
+        .fill-bar-wrap { background:#f0f0f0; border-radius:6px; height:8px; width:100%; min-width:80px; }
+        .fill-bar { height:8px; border-radius:6px; background:linear-gradient(135deg,#f4a261,#e76f51); }
+        .fill-bar--low  { background:linear-gradient(135deg,#ef4444,#dc2626); }
+        .fill-bar--high { background:linear-gradient(135deg,#22c55e,#16a34a); }
+        .tag { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+        .tag--green { background:#ecfdf3; color:#15803d; }
+        .tag--amber { background:#fff7ed; color:#b45309; }
+        .tag--red   { background:#fef2f2; color:#dc2626; }
+
+        /* Insight boxes */
+        .insights-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:32px; }
+        .insight-card { background:white; border-radius:18px; padding:20px 22px; border-left:4px solid #f4a261; box-shadow:0 3px 12px rgba(0,0,0,0.05); }
+        .insight-card--green { border-left-color:#22c55e; }
+        .insight-card--red   { border-left-color:#ef4444; }
+        .insight-card--blue  { border-left-color:#3b82f6; }
+        .insight-title { font-size:13px; font-weight:800; color:#7f8c8d; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+        .insight-value { font-size:1.4rem; font-weight:900; color:#2c3e50; margin-bottom:4px; }
+        .insight-note  { font-size:13px; color:#7f8c8d; line-height:1.5; }
+
+        @media (max-width:768px) { .charts-grid { grid-template-columns:1fr; } .chart-card--wide { grid-column:auto; } }
+    </style>
+</head>
+<body class="event-detail-body">
+<div class="container">
+    {% include "_shared_header.html" %}
+
+    <a href="{{ url_for('admin_dashboard') }}" class="back-link">← Back to Dashboard</a>
+
+    <div class="report-wrap" id="reportContent">
+
+        <div class="report-topbar">
+            <div>
+                <h1 class="report-title">Analytics & Reports</h1>
+                <p class="report-subtitle">Last updated: {% set today = namespace(val='') %}{{ report.total_bookings }} confirmed bookings across {{ report.total_events }} events</p>
+            </div>
+            <button class="pdf-btn" onclick="downloadPDF()">⬇ Download PDF Report</button>
+        </div>
+
+    
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon">🎟</div>
+                <div class="kpi-value">{{ report.total_events }}</div>
+                <div class="kpi-label">Total Events</div>
+            </div>
+            <div class="kpi-card kpi-card--green">
+                <div class="kpi-icon">✅</div>
+                <div class="kpi-value">{{ report.total_bookings }}</div>
+                <div class="kpi-label">Confirmed Bookings</div>
+            </div>
+            <div class="kpi-card kpi-card--blue">
+                <div class="kpi-icon">💰</div>
+                <div class="kpi-value">£{{ "%.0f"|format(report.total_revenue) }}</div>
+                <div class="kpi-label">Total Revenue</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">👥</div>
+                <div class="kpi-value">{{ report.total_users }}</div>
+                <div class="kpi-label">Registered Users</div>
+            </div>
+            <div class="kpi-card kpi-card--amber">
+                <div class="kpi-icon">❌</div>
+                <div class="kpi-value">{{ report.total_cancelled }}</div>
+                <div class="kpi-label">Cancellations</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">⏳</div>
+                <div class="kpi-value">{{ report.total_waiting }}</div>
+                <div class="kpi-label">On Waiting Lists</div>
+            </div>
+        </div>
+
+       
+        <div class="insights-grid">
+            {% if report.top_revenue %}
+            <div class="insight-card insight-card--green">
+                <div class="insight-title">Top Revenue Event</div>
+                <div class="insight-value">{{ report.top_revenue[0].event_name }}</div>
+                <div class="insight-note">Generated £{{ "%.2f"|format(report.top_revenue[0].revenue) }} in confirmed bookings</div>
+            </div>
+            {% endif %}
+            {% if report.events_stats %}
+                {% set sold_out = report.events_stats | selectattr('remaining_tickets', 'le', 0) | list %}
+                {% if sold_out %}
+                <div class="insight-card insight-card--red">
+                    <div class="insight-title">Sold Out Events</div>
+                    <div class="insight-value">{{ sold_out|length }} event{{ 's' if sold_out|length != 1 }}</div>
+                    <div class="insight-note">{{ sold_out | map(attribute='event_name') | join(', ') }}</div>
+                </div>
+                {% endif %}
+                {% set high_demand = report.waiting_stats %}
+                {% if high_demand %}
+                <div class="insight-card insight-card--blue">
+                    <div class="insight-title">Highest Demand (Waitlist)</div>
+                    <div class="insight-value">{{ high_demand[0].event_name }}</div>
+                    <div class="insight-note">{{ high_demand[0].waiting }} people waiting for a spot</div>
+                </div>
+                {% endif %}
+            {% endif %}
+            {% if report.total_bookings > 0 %}
+            <div class="insight-card">
+                <div class="insight-title">Cancellation Rate</div>
+                <div class="insight-value">{{ "%.1f"|format(report.total_cancelled / (report.total_bookings + report.total_cancelled) * 100) if (report.total_bookings + report.total_cancelled) > 0 else 0 }}%</div>
+                <div class="insight-note">{{ report.total_cancelled }} cancellations out of {{ report.total_bookings + report.total_cancelled }} total bookings</div>
+            </div>
+            {% endif %}
+        </div>
+
+       
+        <div class="charts-grid">
+            <div class="chart-card">
+                <p class="chart-title">Bookings by Category</p>
+                <p class="chart-desc">Which event types attract the most attendees</p>
+                <div class="chart-wrap" style="height:260px;">
+                    <canvas id="chartCategoryBookings"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <p class="chart-title">Revenue by Category</p>
+                <p class="chart-desc">Financial contribution per event type</p>
+                <div class="chart-wrap" style="height:260px;">
+                    <canvas id="chartCategoryRevenue"></canvas>
+                </div>
+            </div>
+            {% if report.monthly_bookings %}
+            <div class="chart-card chart-card--wide">
+                <p class="chart-title">Monthly Booking Trend</p>
+                <p class="chart-desc">Confirmed bookings over the past months — spot seasonal patterns</p>
+                <div class="chart-wrap" style="height:220px;">
+                    <canvas id="chartMonthly"></canvas>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        
+        <div class="charts-grid">
+            <div class="chart-card">
+                <p class="chart-title">Top 5 Events by Revenue</p>
+                <p class="chart-desc">Your highest-earning events</p>
+                <div class="chart-wrap" style="height:260px;">
+                    <canvas id="chartTopRevenue"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <p class="chart-title">Discount Usage</p>
+                <p class="chart-desc">How discounts are being applied across bookings</p>
+                <div class="chart-wrap" style="height:260px;">
+                    <canvas id="chartDiscounts"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events Detail Table -->
+        <div class="chart-card" style="margin-bottom:24px;">
+            <p class="chart-title">All Events — Detailed Performance</p>
+            <p class="chart-desc">Capacity fill rate, bookings, cancellations and revenue per event</p>
+            <div class="report-table-wrap">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Category</th>
+                            <th>Venue</th>
+                            <th>Date</th>
+                            <th>Price</th>
+                            <th>Booked</th>
+                            <th>Remaining</th>
+                            <th>Fill Rate</th>
+                            <th>Revenue</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report.events_stats %}
+                        <tr>
+                            <td style="font-weight:700;">{{ row.event_name }}</td>
+                            <td>{{ row.category_name or '—' }}</td>
+                            <td>{{ row.venue_name or '—' }}</td>
+                            <td style="white-space:nowrap;">{{ row.event_starting_date }}</td>
+                            <td>£{{ row.event_total_price }}</td>
+                            <td style="font-weight:700;">{{ row.confirmed_bookings }}</td>
+                            <td>{{ row.remaining_tickets }}</td>
+                            <td style="min-width:120px;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <div class="fill-bar-wrap">
+                                        <div class="fill-bar {% if row.fill_rate >= 80 %}fill-bar--high{% elif row.fill_rate <= 20 %}fill-bar--low{% endif %}"
+                                             style="width:{{ row.fill_rate }}%;"></div>
+                                    </div>
+                                    <span style="font-size:12px;font-weight:700;color:#7f8c8d;">{{ row.fill_rate }}%</span>
+                                </div>
+                            </td>
+                            <td style="font-weight:800;color:#e76f51;">£{{ "%.2f"|format(row.revenue) }}</td>
+                            <td>
+                                {% if row.remaining_tickets <= 0 %}
+                                    <span class="tag tag--red">Sold Out</span>
+                                {% elif row.fill_rate >= 75 %}
+                                    <span class="tag tag--amber">Near Full</span>
+                                {% else %}
+                                    <span class="tag tag--green">Available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Waiting List Table -->
+        {% if report.waiting_stats %}
+        <div class="chart-card" style="margin-bottom:24px;">
+            <p class="chart-title">Waiting List Overview</p>
+            <p class="chart-desc">Events with active demand — consider adding capacity or extra dates</p>
+            <div class="report-table-wrap">
+                <table class="report-table">
+                    <thead>
+                        <tr><th>Event</th><th>People Waiting</th><th>Recommendation</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report.waiting_stats %}
+                        <tr>
+                            <td style="font-weight:700;">{{ row.event_name }}</td>
+                            <td style="font-weight:800;color:#e76f51;">{{ row.waiting }}</td>
+                            <td style="color:#7f8c8d;font-size:13px;">
+                                {% if row.waiting >= 10 %}Consider adding extra capacity or a second date
+                                {% elif row.waiting >= 5 %}High interest — monitor closely
+                                {% else %}Low waiting — normal demand{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+// ── Chart.js global defaults ──
+Chart.defaults.font.family = "'Outfit', sans-serif";
+Chart.defaults.color = '#7f8c8d';
+const COLORS = ['#f4a261','#e76f51','#ffd166','#06d6a0','#118ab2','#ef476f','#073b4c','#8ecae6'];
+
+// ── Bookings by Category ──
+{% if report.category_stats %}
+new Chart(document.getElementById('chartCategoryBookings'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for r in report.category_stats %}'{{ r.category_name or "Uncategorised" }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{ data: [{% for r in report.category_stats %}{{ r.bookings }}{% if not loop.last %},{% endif %}{% endfor %}], backgroundColor: COLORS, borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, padding:14 } } } }
+});
+{% endif %}
+
+// ── Revenue by Category ──
+{% if report.category_revenue %}
+new Chart(document.getElementById('chartCategoryRevenue'), {
+    type: 'bar',
+    data: {
+        labels: [{% for r in report.category_revenue %}'{{ r.category_name or "Uncategorised" }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{ label: 'Revenue (£)', data: [{% for r in report.category_revenue %}{{ r.revenue }}{% if not loop.last %},{% endif %}{% endfor %}], backgroundColor: COLORS, borderRadius: 8 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, grid:{ color:'rgba(0,0,0,0.05)' } }, x:{ grid:{ display:false } } } }
+});
+{% endif %}
+
+// ── Monthly trend ──
+{% if report.monthly_bookings %}
+new Chart(document.getElementById('chartMonthly'), {
+    type: 'line',
+    data: {
+        labels: [{% for r in report.monthly_bookings %}'{{ r.month }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{ label:'Bookings', data:[{% for r in report.monthly_bookings %}{{ r.bookings }}{% if not loop.last %},{% endif %}{% endfor %}], borderColor:'#f4a261', backgroundColor:'rgba(244,162,97,0.12)', tension:0.4, fill:true, pointBackgroundColor:'#e76f51', pointRadius:5 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, grid:{ color:'rgba(0,0,0,0.05)' } }, x:{ grid:{ display:false } } } }
+});
+{% endif %}
+
+// ── Top 5 Revenue ──
+{% if report.top_revenue %}
+new Chart(document.getElementById('chartTopRevenue'), {
+    type: 'bar',
+    data: {
+        labels: [{% for r in report.top_revenue %}'{{ r.event_name[:20] }}{% if r.event_name|length > 20 %}…{% endif %}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{ label:'Revenue (£)', data:[{% for r in report.top_revenue %}{{ r.revenue }}{% if not loop.last %},{% endif %}{% endfor %}], backgroundColor: COLORS, borderRadius:8 }]
+    },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true, grid:{ color:'rgba(0,0,0,0.05)' } }, y:{ grid:{ display:false } } } }
+});
+{% endif %}
+
+// ── Discounts ──
+{% if report.discount_stats %}
+new Chart(document.getElementById('chartDiscounts'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for r in report.discount_stats %}'{{ r.discount_type or "No discount" }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{ data:[{% for r in report.discount_stats %}{{ r.count }}{% if not loop.last %},{% endif %}{% endfor %}], backgroundColor: COLORS, borderWidth:2, borderColor:'#fff' }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, padding:14 } } } }
+});
+{% endif %}
+
+// ── PDF Download ──
+async function downloadPDF() {
+    const btn = document.querySelector('.pdf-btn');
+    btn.textContent = '⏳ Generating…';
+    btn.disabled = true;
+    try {
+        const { jsPDF } = window.jspdf;
+        const el = document.getElementById('reportContent');
+        const canvas = await html2canvas(el, { scale: 1.5, useCORS: true, backgroundColor: '#fef9f3' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pdfW = pdf.internal.pageSize.getWidth();
+        const pdfH = (canvas.height * pdfW) / canvas.width;
+        const pageH = pdf.internal.pageSize.getHeight();
+        let y = 0;
+        while (y < pdfH) {
+            if (y > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, -y, pdfW, pdfH);
+            y += pageH;
+        }
+        pdf.save('bce-report.pdf');
+    } catch(e) {
+        alert('PDF generation failed. Try a smaller browser window.');
+    }
+    btn.textContent = '⬇ Download PDF Report';
+    btn.disabled = false;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<div class="header-wrap">
+
+  <header class="shared-site-header">
+    <div class="logo-badge">BCE</div>
+
+    <!-- Desktop navigation -->
+    <nav class="header-inline-nav">
+      <a class="header-nav-link {% if active_page in ['home','events'] %}header-nav-active{% endif %}"
+         href="{{ url_for('home') }}">Home</a>
+      <a class="header-nav-link" href="{{ url_for('home') }}#event1">Events</a>
+      <a class="header-nav-link" href="{{ url_for('home') }}#venue1">Venues</a>
+      <a class="header-nav-link" href="{{ url_for('home') }}#more-about-us">About</a>
+      <a class="header-nav-link" href="{{ url_for('home') }}#contact">Contact</a>
+    </nav>
+
+    <div class="user-area">
+      {% if session.get('username') %}
+        <a href="{{ url_for('logout') }}" class="login-btn">Logout</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="login-btn">Login</a>
+      {% endif %}
+
+      <button class="hamburger"
+              id="hamburgerBtn"
+              type="button"
+              aria-label="Open menu"
+              aria-expanded="false"
+              onclick="toggleBceMenu(event)">
+        <span class="ham-bar"></span>
+        <span class="ham-bar"></span>
+        <span class="ham-bar"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Burger menu -->
+  <div class="hpanel" id="hamburgerPanel" aria-label="Navigation menu">
+    <div class="hpanel-inner">
+
+      <!-- These navigation links appear in the burger menu only on small screens -->
+      <div class="mobile-nav-links">
+        <p class="hpanel-section-label">Navigation</p>
+
+        <a class="hpanel-link {% if active_page in ['home','events'] %}hpanel-active{% endif %}"
+           href="{{ url_for('home') }}">🏠 Home</a>
+
+        <a class="hpanel-link" href="{{ url_for('home') }}#event1">🎉 Events</a>
+        <a class="hpanel-link" href="{{ url_for('home') }}#venue1">🏛 Venues</a>
+        <a class="hpanel-link" href="{{ url_for('home') }}#more-about-us">ℹ️ About</a>
+        <a class="hpanel-link" href="{{ url_for('home') }}#contact">📞 Contact</a>
+
+        <div class="hpanel-divider"></div>
+      </div>
+
+      {% if session.get('username') %}
+        <p class="hpanel-greeting">👋 Hi, <strong>{{ session['username'] }}</strong></p>
+
+        <a class="hpanel-link {% if active_page == 'wallet' %}hpanel-active{% endif %}"
+           href="{{ url_for('my_wallet') }}">🎫 My Wallet</a>
+
+        <a class="hpanel-link {% if active_page == 'change_password' %}hpanel-active{% endif %}"
+           href="{{ url_for('change_password') }}">🔑 Change Password</a>
+
+        {% if session.get('role') == 'admin' %}
+          <div class="hpanel-divider"></div>
+          <p class="hpanel-section-label">Admin</p>
+
+          <a class="hpanel-link {% if active_page == 'admin' %}hpanel-active{% endif %}"
+             href="{{ url_for('admin_dashboard') }}">⚙️ Dashboard</a>
+
+          <a class="hpanel-link {% if active_page == 'reports' %}hpanel-active{% endif %}"
+             href="{{ url_for('admin_reports') }}">📊 Reports</a>
+
+          <a class="hpanel-link {% if active_page == 'venues' %}hpanel-active{% endif %}"
+             href="{{ url_for('admin_venues') }}">🏛 Manage Venues</a>
+
+          <a class="hpanel-link {% if active_page == 'users' %}hpanel-active{% endif %}"
+             href="{{ url_for('admin_users') }}">👥 Manage Users</a>
+        {% endif %}
+
+      {% else %}
+        <a class="hpanel-link" href="{{ url_for('login') }}">
+          🎫 My Wallet <span class="hpanel-note">(login required)</span>
+        </a>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleBceMenu(event) {
+    event.stopPropagation();
+
+    const panel = document.getElementById("hamburgerPanel");
+    const btn = document.getElementById("hamburgerBtn");
+
+    if (!panel || !btn) return;
+
+    const isOpen = panel.style.display === "block";
+
+    panel.style.display = isOpen ? "none" : "block";
+    btn.setAttribute("aria-expanded", isOpen ? "false" : "true");
+}
+
+document.addEventListener("click", function(event) {
+    const panel = document.getElementById("hamburgerPanel");
+    const btn = document.getElementById("hamburgerBtn");
+
+    if (!panel || !btn) return;
+
+    if (!panel.contains(event.target) && !btn.contains(event.target)) {
+        panel.style.display = "none";
+        btn.setAttribute("aria-expanded", "false");
+    }
+});
+</script>

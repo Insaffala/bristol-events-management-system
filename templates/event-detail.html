@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ event.event_name }} - Bristol Community Events</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+
+<div class="container py-4">
+
+    {% include "_shared_header.html" %}
+
+    <!-- Back link -->
+    <a href="{{ url_for('events') }}" class="ed-back-link">← Back to all events</a>
+
+    <!-- Image mapping -->
+    {% if event.event_image %}
+        {% set event_image = url_for('static', filename='img/' ~ event.event_image) %}
+        {% set event_category = event.category_name or "Event" %}
+    {% elif event.event_id == 1 %}
+        {% set event_image = url_for('static', filename='img/hyppodrome2.jpg') %}
+        {% set event_category = "Premium" %}
+    {% elif event.event_id == 2 %}
+        {% set event_image = url_for('static', filename='img/1.jpg') %}
+        {% set event_category = "Popular" %}
+    {% elif event.event_id == 3 %}
+        {% set event_image = url_for('static', filename='img/paint.avif') %}
+        {% set event_category = "New" %}
+    {% elif event.event_id == 4 %}
+        {% set event_image = url_for('static', filename='img/crochet-workshop.jpg') %}
+        {% set event_category = "Limited Spots" %}
+    {% elif event.event_id == 5 %}
+        {% set event_image = url_for('static', filename='img/BONFIRE.jpeg') %}
+        {% set event_category = "Seasonal" %}
+    {% elif event.event_id == 6 %}
+        {% set event_image = url_for('static', filename='img/diwali.jpeg') %}
+        {% set event_category = "Cultural" %}
+    {% else %}
+        {% set event_image = url_for('static', filename='img/bristol-pic2.jpg') %}
+        {% set event_category = "Event" %}
+    {% endif %}
+
+    <!-- Hero Split -->
+    <section class="ed-hero-split">
+
+        <!-- Left: Event Image -->
+        <div class="ed-image-panel">
+            <img src="{{ event_image }}" alt="{{ event.event_name }}" class="ed-hero-image">
+            <div class="ed-image-overlay">
+                <span class="ed-category-badge">{{ event_category }}</span>
+            </div>
+        </div>
+
+        <!-- Right: Event Title & Quick Info -->
+        <div class="ed-title-panel">
+            <span class="ed-label">Event Details</span>
+            <h2 class="ed-event-title">{{ event.event_name }}</h2>
+            <p class="ed-event-tagline">{{ event.event_description or "Reserve your place and explore everything you need to know below." }}</p>
+
+            {% if conditions_text %}<div class="ed-conditions-box"><strong>Conditions:</strong><br>{{ conditions_text.replace("\n", "<br>") | safe }}</div>{% elif conditions %}<div class="ed-conditions-box"><strong>Conditions:</strong><br>{% for c in conditions %}{{ c.condition_name }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+            {% if suitability_text %}<div class="ed-suitability-box"><strong>Suitable for:</strong> {{ suitability_text }}</div>{% endif %}
+
+            <div class="ed-quick-pills">
+                <div class="ed-pill">
+                    <span class="ed-pill-icon">📍</span>
+                    <span>{{ event.venue_name }}</span>
+                </div>
+                <div class="ed-pill">
+                    <span class="ed-pill-icon">🎟</span>
+                    <span>
+                        {% if event.event_total_price == 0 or event.event_total_price == "0" %}
+                            Free Entry
+                        {% else %}
+                            £{{ event.event_total_price }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="ed-pill {% if remaining_tickets == 0 %}ed-pill-danger{% elif remaining_tickets <= 5 %}ed-pill-warning{% endif %}">
+                    <span class="ed-pill-icon">🎫</span>
+                    <span>
+                        {% if remaining_tickets == 0 %}
+                            Sold out
+                        {% elif remaining_tickets <= 5 %}
+                            Only {{ remaining_tickets }} left!
+                        {% else %}
+                            {{ remaining_tickets }} tickets left
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Info Cards Row -->
+    <section class="ed-info-row">
+        <div class="ed-info-card">
+            <span class="ed-info-icon">📅</span>
+            <span class="ed-info-label">Start Date</span>
+            <span class="ed-info-value">{{ event.event_starting_date }}</span>
+        </div>
+        <div class="ed-info-card">
+            <span class="ed-info-icon">📅</span>
+            <span class="ed-info-label">End Date</span>
+            <span class="ed-info-value">{{ event.event_ending_date }}</span>
+        </div>
+        <div class="ed-info-card">
+            <span class="ed-info-icon">📍</span>
+            <span class="ed-info-label">Venue</span>
+            <span class="ed-info-value">{{ event.venue_name }}</span>
+        </div>
+        <div class="ed-info-card">
+            <span class="ed-info-icon">🎟</span>
+            <span class="ed-info-label">Price</span>
+            <span class="ed-info-value ed-price-highlight">
+                {% if event.event_total_price == 0 or event.event_total_price == "0" %}
+                    Free
+                {% else %}
+                    £{{ event.event_total_price }}
+                {% endif %}
+            </span>
+        </div>
+        <div class="ed-info-card">
+            <span class="ed-info-icon">⏳</span>
+            <span class="ed-info-label">Booking Deadline</span>
+            <span class="ed-info-value">{{ event.booking_deadline }}</span>
+        </div>
+        <div class="ed-info-card {% if remaining_tickets == 0 %}ed-info-card-danger{% elif remaining_tickets <= 5 %}ed-info-card-warning{% endif %}">
+            <span class="ed-info-icon">🎫</span>
+            <span class="ed-info-label">Remaining Tickets</span>
+            <span class="ed-info-value">{{ remaining_tickets }}</span>
+        </div>
+    </section>
+
+    <!-- Booking Section -->
+    <section class="ed-booking-section">
+        <div class="ed-booking-left">
+            <h3 class="ed-booking-title">Book Your Experience</h3>
+            <p class="ed-booking-sub">Secure your spot at <strong>{{ event.event_name }}</strong> — don't miss out!</p>
+
+            <div class="ed-ticket-card">
+                <div class="ed-ticket-header">
+                    <div class="ed-ticket-icon">🎟</div>
+                    <div>
+                        <h4 class="ed-ticket-name">Standard Ticket</h4>
+                        <p class="ed-ticket-desc">Entry to {{ event.event_name }} at {{ event.venue_name }}</p>
+                    </div>
+                    <div class="ed-ticket-price">
+                        {% if event.event_total_price == 0 or event.event_total_price == "0" %}
+                            <span class="ed-price-free">Free</span>
+                        {% else %}
+                            £{{ event.event_total_price }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="ed-ticket-divider">
+                    <span></span><span class="ed-divider-label">per person</span><span></span>
+                </div>
+
+                {% if message %}
+                    <div class="ed-message {% if 'already' in message.lower() or 'full' in message.lower() %}ed-message-warn{% else %}ed-message-success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endif %}
+
+                {% if not is_full %}
+                    <form method="POST" action="{{ url_for('book_event', event_id=event.event_id) }}">
+                        
+                        {% if event_days %}
+                        <div class="ed-student-box">
+                            <strong style="display:block; margin-bottom:8px;">Choose your day(s)</strong>
+                            {% for day in event_days %}
+                              <label class="ed-student-label">
+                                <input type="checkbox" name="selected_days" value="{{ day.event_day_id }}" class="ed-student-checkbox">
+                                {{ day.event_date }} — £{{ day.day_price }}
+                              </label>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="ed-student-box">
+                            <label class="ed-student-label">
+                                <input type="checkbox" name="is_student" value="yes" class="ed-student-checkbox">
+                                I am a student
+                            </label>
+                            <p class="ed-student-note">
+                                Student discount may apply. Please bring your valid student ID to the event.
+                            </p>
+                        </div>
+                        <button type="submit" class="ed-book-btn">
+                          Continue to Payment →
+                        </button>
+                    </form>
+
+                   
+                    {% else %}
+                    <div class="ed-sold-out-notice">
+                        <span>🔴</span> This event is fully booked
+                    </div>
+                    <form method="POST" action="{{ url_for('add_to_waiting_list', event_id=event.event_id) }}">
+                        <button type="submit" class="ed-waitlist-btn">
+                            Join Waiting List
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: Why attend -->
+        <div class="ed-booking-right">
+            <h3 class="ed-why-title">Why attend?</h3>
+            <ul class="ed-why-list">
+                <li class="ed-why-item">
+                    <span class="ed-why-icon">✨</span>
+                    <div>
+                        <strong>Unforgettable experience</strong>
+                        <p>Be part of one of Bristol's most loved community events.</p>
+                    </div>
+                </li>
+                <li class="ed-why-item">
+                    <span class="ed-why-icon">🤝</span>
+                    <div>
+                        <strong>Meet your community</strong>
+                        <p>Connect with like-minded people from across the city.</p>
+                    </div>
+                </li>
+                <li class="ed-why-item">
+                    <span class="ed-why-icon">🛡️</span>
+                    <div>
+                        <strong>Safe & secure booking</strong>
+                        <p>Simple, instant confirmation. No fuss, no stress.</p>
+                    </div>
+                </li>
+                <li class="ed-why-item">
+                    <span class="ed-why-icon">🎁</span>
+                    <div>
+                        <strong>Great value</strong>
+                        <p>Transparent pricing with no hidden fees.</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

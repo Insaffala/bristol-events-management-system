@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wallet - Bristol Community Events</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+
+    <div class="container">
+        {% include "_shared_header.html" %}
+
+        <a href="{{ url_for('home') }}" class="back-link">← Back</a>
+
+        {% if message %}
+            <div class="detail-message">{{ message }}</div>
+        {% endif %}
+
+        <!-- Current Bookings -->
+        <section class="detail-info-card">
+            <h2 class="booking-title">My Current Bookings</h2>
+            <p class="booking-subtitle">These are your upcoming confirmed events.</p>
+
+            {% if current_bookings %}
+                <div class="wallet-grid">
+                    {% for booking in current_bookings %}
+                        <div class="wallet-card">
+                            <h3>{{ booking.event_name }}</h3>
+
+                            <p><strong>Venue:</strong> {{ booking.venue_name }}</p>
+                            <p><strong>Start date:</strong> {{ booking.event_starting_date }}</p>
+                            <p><strong>End date:</strong> {{ booking.event_ending_date }}</p>
+                            <p><strong>Booked on:</strong> {{ booking.booking_date }}</p>
+                            <p><strong>Total price:</strong> £{{ booking.total_price }}</p>
+                            <p><strong>Discount:</strong> {{ booking.discount_type }} (£{{ booking.discount_amount }})</p>
+                            {% if booking.booking_status == 'cancelled' %}
+                                <p><strong>Cancellation charge applied:</strong> £{{ booking.cancellation_charge_amount }} ({{ booking.cancellation_charge_percent }}%)</p>
+                            {% endif %}
+                            <p>
+                                <strong>Status:</strong>
+                                <span class="status-pill">{{ booking.booking_status }}</span>
+                            </p>
+
+                            <form method="POST" action="{{ url_for('cancel_user_booking', booking_id=booking.booking_id) }}" style="margin-top: 15px;">
+                                <button type="submit" class="cancel-btn">Cancel Booking</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">You do not have any current bookings.</p>
+            {% endif %}
+        </section>
+
+        <!-- Past Bookings -->
+        <section class="detail-booking-card">
+            <h2 class="booking-title">My Past Bookings</h2>
+            <p class="booking-subtitle">Past events and cancelled bookings appear here.</p>
+
+            {% if past_bookings %}
+                <div class="wallet-grid">
+                    {% for booking in past_bookings %}
+                        <div class="wallet-card">
+                            <h3>{{ booking.event_name }}</h3>
+
+                            <p><strong>Venue:</strong> {{ booking.venue_name }}</p>
+                            <p><strong>Start date:</strong> {{ booking.event_starting_date }}</p>
+                            <p><strong>End date:</strong> {{ booking.event_ending_date }}</p>
+                            <p><strong>Booked on:</strong> {{ booking.booking_date }}</p>
+                            <p><strong>Total price:</strong> £{{ booking.total_price }}</p>
+                            <p><strong>Discount:</strong> {{ booking.discount_type }} (£{{ booking.discount_amount }})</p>
+                            {% if booking.booking_status == 'cancelled' %}
+                                <p><strong>Cancellation charge applied:</strong> £{{ booking.cancellation_charge_amount }} ({{ booking.cancellation_charge_percent }}%)</p>
+                            {% endif %}
+                            <p>
+                                <strong>Status:</strong>
+                                <span class="status-pill {% if booking.booking_status == 'cancelled' %}waiting{% endif %}">
+                                    {{ booking.booking_status }}
+                                </span>
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">You do not have any past bookings yet.</p>
+            {% endif %}
+        </section>
+
+        <!-- Waiting List -->
+        <section class="detail-booking-card">
+            <h2 class="booking-title">My Waiting List</h2>
+            <p class="booking-subtitle">These are the events where you are currently waiting for a spot.</p>
+
+            {% if waiting_entries %}
+                <div class="wallet-grid">
+                    {% for item in waiting_entries %}
+                        <div class="wallet-card">
+                            <h3>{{ item.event_name }}</h3>
+
+                            <p><strong>Venue:</strong> {{ item.venue_name }}</p>
+                            <p><strong>Start date:</strong> {{ item.event_starting_date }}</p>
+                            <p><strong>End date:</strong> {{ item.event_ending_date }}</p>
+                            <p><strong>Joined waiting list:</strong> {{ item.joined_at }}</p>
+                            <p>
+                                <strong>Status:</strong>
+                                <span class="status-pill {% if item.wait_status == 'waiting' %}waiting{% elif item.wait_status == 'promoted' %}promoted{% endif %}">
+                                    {{ item.wait_status }}
+                                </span>
+                                {% if item.wait_status == 'promoted' %}
+                                    <p class="detail-message" style="margin-top:10px;">You have been promoted from the waiting list. A confirmed booking has been created for this event.</p>
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-text">You are not on any waiting list yet.</p>
+            {% endif %}
+        </section>
+    </div>
+
+</body>
+</html>

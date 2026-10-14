@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Bristol Community Events</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+<div class="container">
+    {% include "_shared_header.html" %}
+
+    <a href="{{ url_for('event_detail', event_id=event.event_id) }}" class="back-link">← Back to event</a>
+
+    <div class="payment-page-wrap">
+
+        <!-- Left — Order summary -->
+        <div class="payment-summary-card">
+            <h2 class="payment-section-title">Order Summary</h2>
+
+            <div class="payment-event-info">
+                <div class="payment-event-icon">🎟</div>
+                <div>
+                    <p class="payment-event-name">{{ event.event_name }}</p>
+                    <p class="payment-event-meta">📍 {{ event.venue_name }}</p>
+                    <p class="payment-event-meta">📅 {{ event.event_starting_date }}</p>
+                </div>
+            </div>
+
+            <div class="payment-breakdown">
+                <div class="payment-row">
+                    <span>Original price</span>
+                    <span>£{{ original_price }}</span>
+                </div>
+                {% if discount_amount and discount_amount != '0' and discount_amount != '0.0' %}
+                <div class="payment-row payment-row--discount">
+                    <span>Discount ({{ chosen_percent }}%)</span>
+                    <span>− £{{ discount_amount }}</span>
+                </div>
+                {% endif %}
+                <div class="payment-divider"></div>
+                <div class="payment-row payment-row--total">
+                    <span>Total due</span>
+                    <span>£{{ final_price }}</span>
+                </div>
+            </div>
+
+            <div class="payment-secure-badge">
+                🔒 Secure payment — your data is protected
+            </div>
+        </div>
+
+        <!-- Right — Payment methods -->
+        <div class="payment-methods-card">
+            <h2 class="payment-section-title">Payment Method</h2>
+            <p class="payment-methods-sub">Choose how you'd like to pay</p>
+
+           <form method="POST" action="{{ url_for('confirm_payment') }}" id="paymentForm">
+                <input type="hidden" name="original_price"   value="{{ original_price }}">
+                <input type="hidden" name="advance_percent"  value="{{ advance_percent }}">
+                <input type="hidden" name="student_percent"  value="{{ student_percent }}">
+                <input type="hidden" name="chosen_percent"   value="{{ chosen_percent }}">
+                <input type="hidden" name="discount_amount"  value="{{ discount_amount }}">
+                <input type="hidden" name="final_price"      value="{{ final_price }}">
+                <input type="hidden" name="is_student"       value="{{ is_student }}">
+
+                <div class="pmo-methods">
+                    <label class="pmo-method">
+                        <input type="radio" name="payment_method" value="card" checked>
+                        <div class="pmo-method-card">
+                            <span class="pmo-method-icon">💳</span>
+                            <div>
+                                <span class="pmo-method-label">Debit / Credit Card</span>
+                                <span class="pmo-method-desc">Visa, Mastercard, Amex</span>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="pmo-method">
+                        <input type="radio" name="payment_method" value="apple_pay">
+                        <div class="pmo-method-card">
+                            <span class="pmo-method-icon">🍎</span>
+                            <div>
+                                <span class="pmo-method-label">Apple Pay</span>
+                                <span class="pmo-method-desc">Touch ID or Face ID</span>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="pmo-method">
+                        <input type="radio" name="payment_method" value="google_pay">
+                        <div class="pmo-method-card">
+                            <span class="pmo-method-icon">🔵</span>
+                            <div>
+                                <span class="pmo-method-label">Google Pay</span>
+                                <span class="pmo-method-desc">Fast & secure</span>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="pmo-method">
+                        <input type="radio" name="payment_method" value="paypal">
+                        <div class="pmo-method-card">
+                            <span class="pmo-method-icon">🅿</span>
+                            <div>
+                                <span class="pmo-method-label">PayPal</span>
+                                <span class="pmo-method-desc">Pay with your PayPal balance</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Card detail fields (shown only for card) -->
+                <div id="cardFields" class="card-fields">
+                    <div>
+                        <label class="form-label">Card Number</label>
+                        <input type="text" class="form-input" placeholder="1234 5678 9012 3456"
+                               maxlength="19" id="cardNumber" autocomplete="off">
+                    </div>
+                    <div class="card-fields-row">
+                        <div>
+                            <label class="form-label">Expiry</label>
+                            <input type="text" class="form-input" placeholder="MM / YY" maxlength="7">
+                        </div>
+                        <div>
+                            <label class="form-label">CVV</label>
+                            <input type="text" class="form-input" placeholder="123" maxlength="4">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Cardholder Name</label>
+                        <input type="text" class="form-input" placeholder="Name on card">
+                    </div>
+                </div>
+
+                <button type="submit" class="pmo-confirm-btn">
+                    Confirm Payment — £{{ final_price }}
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// Show/hide card fields based on payment method
+document.querySelectorAll('input[name="payment_method"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+        document.getElementById('cardFields').style.display =
+            this.value === 'card' ? 'block' : 'none';
+    });
+});
+
+// Format card number
+document.getElementById('cardNumber').addEventListener('input', function() {
+    var v = this.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    var matches = v.match(/\d{4,16}/g);
+    var match = matches && matches[0] || '';
+    var parts = [];
+    for (var i = 0, len = match.length; i < len; i += 4) {
+        parts.push(match.substring(i, i + 4));
+    }
+    this.value = parts.length ? parts.join(' ') : v;
+});
+
+// Highlight selected method
+document.querySelectorAll('.pmo-method').forEach(function(label) {
+    label.querySelector('input').addEventListener('change', function() {
+        document.querySelectorAll('.pmo-method-card').forEach(function(c) { c.classList.remove('pmo-method-selected'); });
+        label.querySelector('.pmo-method-card').classList.add('pmo-method-selected');
+    });
+});
+document.querySelector('input[name="payment_method"][value="card"]').dispatchEvent(new Event('change'));
+</script>
+</body>
+</html>

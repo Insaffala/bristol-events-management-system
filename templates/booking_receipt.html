@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Receipt - Bristol Community Events</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+
+    <div class="container">
+        {% include "_shared_header.html" %}
+
+        <a href="{{ url_for('my_wallet') }}" class="back-link">← Back</a>
+
+        <section class="detail-booking-card">
+            <h2 class="booking-title">Receipt Summary</h2>
+            <p class="booking-subtitle">Your booking has been confirmed successfully.</p>
+
+            <div class="wallet-card">
+                <p><strong>Booking ID:</strong> {{ booking_id }}</p>
+                <p><strong>Event:</strong> {{ event.event_name }}</p>
+                <p><strong>Venue:</strong> {{ event.venue_name }}</p>
+                <p><strong>Start date:</strong> {{ event.event_starting_date }}</p>
+                <p><strong>End date:</strong> {{ event.event_ending_date }}</p>
+
+                <hr style="margin: 18px 0;">
+
+                <p><strong>Original price:</strong> £{{ original_price }}</p>
+                <p><strong>Advance booking discount:</strong> {{ advance_percent }}%</p>
+                <p><strong>Student discount:</strong> {{ student_percent }}%</p>
+                <p><strong>Applied discount:</strong> {{ chosen_percent }}%</p>
+                <p><strong>Discount amount:</strong> £{{ discount_amount }}</p>
+                <p><strong>Final total:</strong> <span style="font-size: 1.2rem; font-weight: 900; color: #e76f51;">£{{ final_price }}</span></p>
+
+                {% if is_student == "yes" %}
+                    <p style="margin-top: 12px; color: #7f8c8d;">
+                        Student discount selected. Please bring your student ID to the event.
+                    </p>
+                {% endif %}
+                <div style="margin-top:18px; display:flex; gap:12px; flex-wrap:wrap;">
+                    <a href="{{ url_for('download_receipt_pdf', booking_id=booking_id, event_id=event.event_id, original_price=original_price, discount_amount=discount_amount, final_price=final_price) }}" class="event-btn">Download Receipt</a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+</body>
+</html>

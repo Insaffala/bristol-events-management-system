@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Venue - Bristol Community Events</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="event-detail-body">
+<div class="container">
+    {% include "_shared_header.html" %}
+
+    <a href="{{ url_for('admin_venues') }}" class="back-link">← Back to Venues</a>
+
+    <section class="detail-info-card">
+        <h2 class="booking-title">Edit Venue</h2>
+        <p class="booking-subtitle">Update the details for <strong>{{ venue.venue_name }}</strong>.</p>
+
+        <form method="POST" enctype="multipart/form-data" class="admin-form-grid">
+            <div>
+                <label class="form-label">Venue Name</label>
+                <input type="text" name="venue_name" value="{{ venue.venue_name }}"
+                       class="form-input" required>
+            </div>
+            <div>
+                <label class="form-label">Address</label>
+                <input type="text" name="address" value="{{ venue.address or '' }}"
+                       class="form-input" required>
+            </div>
+            <div>
+                <label class="form-label">Capacity</label>
+                <input type="number" name="capacity" value="{{ venue.capacity }}"
+                       class="form-input" required>
+            </div>
+            <div>
+                <label class="form-label">Suitable For</label>
+                <input type="text" name="suitability" value="{{ venue.suitability or '' }}"
+                       placeholder="e.g. Musical, Sports, Exhibitions" class="form-input" required>
+            </div>
+            <div>
+                <label class="form-label">Venue Image</label>
+                {% if venue.venue_image %}
+                    <div style="margin-bottom:10px;">
+                        <img src="{{ url_for('static', filename='img/' ~ venue.venue_image) }}"
+                             alt="{{ venue.venue_name }}"
+                             style="width:160px;height:100px;object-fit:cover;border-radius:12px;border:1px solid rgba(244,162,97,0.2);">
+                        <p style="font-size:13px;color:#7f8c8d;margin-top:6px;">Current image — upload a new one to replace it.</p>
+                    </div>
+                {% endif %}
+                <input type="file" name="venue_image_file" accept="image/*" class="form-input">
+                <p style="margin-top:6px;font-size:13px;color:#7f8c8d;">Leave empty to keep the current image.</p>
+            </div>
+            <div style="grid-column:1/-1;display:flex;gap:12px;flex-wrap:wrap;">
+                <button type="submit" class="login-btn" style="padding:13px 36px;font-size:15px;">Save Changes</button>
+                <a href="{{ url_for('admin_venues') }}" class="account-btn" style="padding:13px 24px;font-size:15px;">Cancel</a>
+            </div>
+        </form>
+    </section>
+</div>
+</body>
+</html>
