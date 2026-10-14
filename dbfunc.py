@@ -13,7 +13,7 @@ def get_connection():
         port=int(os.environ.get("DB_PORT", "3306")),
         user=os.environ["DB_USER"],
         password=os.environ["DB_PASSWORD"],
-        database=os.environ.get("DB_NAME", "insaf2fala_prj")
+        database=os.environ["DB_NAME"]
     )
 
 
@@ -1028,7 +1028,7 @@ def add_venue(venue_name, address, capacity):
 
 def get_event_suitability(event_id):
     """Suitability belongs to venue, not event.
-    This follows the assessment brief table: each venue has a capacity and is suitable for event types.
+    Each venue has a capacity and is suitable for event types.
     """
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
